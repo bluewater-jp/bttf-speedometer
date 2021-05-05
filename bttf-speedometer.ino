@@ -1,6 +1,7 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 
+// LED display pattern {A, B, C, D, E, F, G}
 boolean PatternNum[10][7]={
   {1,1,1,1,1,1,0}, //0
   {0,1,1,0,0,0,0}, //1
@@ -14,12 +15,14 @@ boolean PatternNum[10][7]={
   {1,1,1,1,0,1,1} //9
 };
 boolean PatternClear[7]={0,0,0,0,0,0,0};
-boolean PatternMinus[7]={0,0,0,0,0,0,1};
+boolean PatternMinus[7]={0,0,0,0,0,0,1}; //-
 
+// LED Setting
 int StartPin[2]={9, 2};
 int Segment[7]={0,2,5,6,3,1,4};
 int SegmentDot=16;
 
+// GPS Setting
 static const int RXPin = 21, TXPin = 20;
 static const uint32_t GPSBaud = 9600;
 
@@ -48,16 +51,25 @@ void setup()
 void loop()
 {
   digitalWrite(SegmentDot, HIGH);
-  
+
+  // Available GPS Data
+  //Serial.println(F("available"));
   while (ss.available() > 0) {
     byte gpsData = ss.read();
+    
     if (gps.encode(gpsData)){
       displayInfo();
-    }
+      displaySpeed(0);
 
-    if (!gps.location.isValid())
-    {
-      digitalWrite(SegmentDot, LOW);
+      if (!gps.location.isValid())
+      {
+        digitalWrite(SegmentDot, LOW);
+      }
+  
+      if (gps.location.age() > 2000)
+      {
+        digitalWrite(SegmentDot, LOW);
+      }
     }
   }
 
@@ -69,7 +81,7 @@ void loop()
     while(true);
   }
 
-  displaySpeed();
+  displaySpeed(50);
 }
 
 void displayInfo()
@@ -128,16 +140,16 @@ void displayInfo()
   Serial.println();
 }
 
-void displaySpeed() {
+void displaySpeed(int delaytime) {
   int s = (int)(gps.speed.kmph());
-  while(s != wSpeed) {
+  if (s != wSpeed) {
     if (wSpeed > s) {
       wSpeed--;
     } else {
       wSpeed++;
     }
     displayNum(wSpeed);
-    delay(80);
+    delay(delaytime);
   }
 }
 
